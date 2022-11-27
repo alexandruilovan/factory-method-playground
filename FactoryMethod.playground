@@ -1,0 +1,117 @@
+import Foundation
+
+enum FuelType {
+    case water
+    case liquidOxygen
+}
+
+protocol Rocket {
+    var fuelType: FuelType { get set }
+    var fuelCapacity: Double { get set }
+    var fuelAvailable: Double { get set }
+   
+    mutating func updateFuelTank(with amount: Double)
+    func checkSubSystems()
+    func executeLaunchSequence(inSeconds: Double)
+}
+
+extension Rocket {
+    mutating func updateFuelTank(with amount: Double) {
+        if fuelAvailable == 0 && amount <= fuelCapacity {
+            self.fuelAvailable = amount
+        } else {
+            print("Too Much Fuel..We will save the rest of it for later")
+        }
+    }
+    
+    func executeLaunchSequence(inSeconds timeToElapse: Double = 10.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeToElapse, execute: {
+            print("Launching")
+            print("Consuming fuel")
+        })
+    }
+}
+
+protocol RocketFactory {
+    func createRocket(fuelCapacity: Double, fuelType: FuelType) -> Rocket
+}
+
+class SpaceRocketFactory: RocketFactory {
+    func createRocket(fuelCapacity: Double, fuelType: FuelType = .liquidOxygen) -> Rocket {
+        return SpaceRocket(fuelCapacity: fuelCapacity, fuelType: fuelType)
+    }
+}
+
+class WeatherRocketFactory: RocketFactory {
+    func createRocket(fuelCapacity: Double, fuelType: FuelType = .water) -> Rocket {
+        return WeatherRocket(fuelCapacity: fuelCapacity, fuelType: fuelType)
+    }
+}
+
+class SpaceRocket: Rocket {
+    var fuelAvailable: Double
+    var fuelCapacity: Double
+    var fuelType: FuelType
+    
+    init(fuelCapacity: Double, fuelType: FuelType, fuelAvailable: Double = 0) {
+        self.fuelCapacity = fuelCapacity
+        self.fuelType = fuelType
+        self.fuelAvailable = fuelAvailable
+    }
+    
+    func checkSubSystems() {
+       print("All subsystems nominal and ready for suborbital launch")
+    }
+}
+
+class WeatherRocket: Rocket {
+    var fuelAvailable: Double
+    var fuelType: FuelType
+    var fuelCapacity: Double
+   
+    init(fuelCapacity: Double, fuelType: FuelType, fuelAvailable: Double = 0) {
+        self.fuelCapacity = fuelCapacity
+        self.fuelType = fuelType
+        self.fuelAvailable = fuelAvailable
+    }
+    
+    func checkSubSystems() {
+        print("Ready to soak")
+    }
+}
+
+class RocketApp {
+    
+    private var currentRocket: Rocket?
+    
+    func launchSpaceRocket(with factory: RocketFactory) {
+        guard let rocket = self.currentRocket else {
+            var rocket = factory.createRocket(fuelCapacity: 5000, fuelType: .liquidOxygen)
+            rocket.updateFuelTank(with: 5000)
+            rocket.checkSubSystems()
+            return
+        }
+        
+        rocket.checkSubSystems()
+        rocket.executeLaunchSequence(inSeconds: 10.0)
+    }
+    
+    func launchWeatherRocket(with factory: RocketFactory) {
+        guard let rocket = self.currentRocket else {
+            var rocket = factory.createRocket(fuelCapacity: 5, fuelType: .water)
+            rocket.updateFuelTank(with: 5)
+            rocket.checkSubSystems()
+            return
+        }
+        
+        rocket.checkSubSystems()
+        rocket.executeLaunchSequence(inSeconds: 5.0)
+    }
+}
+
+let rocketApp = RocketApp()
+let factory = SpaceRocketFactory()
+let weatherFactory = WeatherRocketFactory()
+
+rocketApp.launchSpaceRocket(with: factory)
+rocketApp.launchWeatherRocket(with: weatherFactory)
